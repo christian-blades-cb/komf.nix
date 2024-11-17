@@ -156,6 +156,24 @@ in
           KOMF_KAVITA_BASE_URI = cfg.kavita.uri;
         };
 
+        preStart =
+            lib.optionalString (cfg.komga.passwordFile != null) ''
+              export KOMF_KOMGA_PASSWORD=$(cat $CREDENTIALS_DIRECTORY/komf-komga-creds);
+            ''
+            + lib.optionalString (cfg.kavita.passwordFile != null) ''
+              export KOMF_KAVITA_API_KEY=$(cat $CREDENTIALS_DIRECTORY/komf-kavita-creds);
+            ''
+            + lib.optionalString (cfg.providers.mal.passwordFile != null) ''
+              export KOMF_METADATA_PROVIDERS_MAL_CLIENT_ID=$(cat $CREDENTIALS_DIRECTORY/komf-mal-creds);
+            ''
+            + lib.optionalString (cfg.providers.comicvine.passwordFile != null) ''
+              export KOMF_METADATA_PROVIDERS_COMIC_VINE_API_KEY=$(cat $CREDENTIALS_DIRECTORY/komf-comicvine-creds);
+            ''
+            + lib.optionalString (cfg.providers.bangumi.passwordFile != null) ''
+              export KOMF_METADATA_PROVIDERS_BANGUMI_TOKEN=$(cat $CREDENTIALS_DIRECTORY/komf-bangumi-creds);
+            ''
+          ;
+
         description = "Komf is a free and open source comics/mangas media server";
 
         wantedBy = [ "multi-user.target" ];
@@ -171,13 +189,13 @@ in
           ExecStart = "${getExe cfg.package} ${applicationYml}";
 
           LoadCredential = let
-            credentialFiles = (lib.optional (cfg.komga.passwordFile != null) "KOMF_KOMGA_PASSWORD:${cfg.komga.passwordFile}")
-                              ++ (lib.optional (cfg.kavita.passwordFile != null) "KOMF_KAVITA_API_KEY:${cfg.kavita.passwordFile}")
-                              ++ (lib.optional (cfg.providers.mal.passwordFile != null) "KOMF_METADATA_PROVIDERS_MAL_CLIENT_ID:${cfg.providers.mal.passwordFile}")
-                              ++ (lib.optional (cfg.providers.comicvine.passwordFile != null) "KOMF_METADATA_PROVIDERS_COMIC_VINE_API_KEY:${cfg.providers.comicvine.passwordFile}")
-                              ++ (lib.optional (cfg.providers.bangumi.passwordFile != null) "KOMF_METADATA_PROVIDERS_BANGUMI_TOKEN:${cfg.providers.bangumi.passwordFile != null}");
+            credentialFiles = (lib.optional (cfg.komga.passwordFile != null) "komf-komga-creds:${cfg.komga.passwordFile}")
+                              ++ (lib.optional (cfg.kavita.passwordFile != null) "komf-kavita-creds:${cfg.kavita.passwordFile}")
+                              ++ (lib.optional (cfg.providers.mal.passwordFile != null) "komf-mal-creds:${cfg.providers.mal.passwordFile}")
+                              ++ (lib.optional (cfg.providers.comicvine.passwordFile != null) "komf-comicvine-creds:${cfg.providers.comicvine.passwordFile}")
+                              ++ (lib.optional (cfg.providers.bangumi.passwordFile != null) "komf-bangumi-creds:${cfg.providers.bangumi.passwordFile}");
           in
-            lib.concatStringsSep " " credentialFiles;
+            credentialFiles;
 
           StateDirectory = mkIf (cfg.stateDir == "/var/lib/komf") "komf";
 
