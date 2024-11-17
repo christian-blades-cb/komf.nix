@@ -11,13 +11,13 @@
       in
         {
           packages.default = pkgs.callPackage ./default.nix {};
-          nixosModules.default = ./module.nix;
         } 
     ) // {
+      nixosModules.default = ./module.nix;
       nixosConfigurations.container = nixpkgs.lib.nixosSystem rec {
         system = "x86_64-linux";
         modules = [
-          self.nixosModules.${system}.default
+          self.nixosModules.default
           ({config, ...} : {
             boot.isContainer = true;
             networking.firewall.allowedTCPPorts = [ config.services.komf.port ];
