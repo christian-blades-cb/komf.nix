@@ -17,7 +17,6 @@ let
 in
 
 {
-  # TODO: other credentials (kavita, comicvine) as LoadCredential files
   options = {
     services.komf = with lib; {
       enable = mkEnableOption "Komga and Kavita metadata fetcher";
@@ -64,6 +63,22 @@ in
         description = "Komf settings (application.yml). See https://github.com/Snd-R/komf?tab=readme-ov-file#example-applicationyml-config";
       };
 
+      kavita = {
+        passwordFile = mkOption {
+          type = types.nullOr types.path;
+          default = null;
+          description = "File containing the API key for the kavita instance";
+          example = "/run/agenic/kavita-creds";
+        };
+
+        uri = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+          description = "Kavita base url";
+          example = "https://kavita.company:5000";
+        };
+      };
+
       komga = {
         passwordFile = mkOption {
           type = types.nullOr types.path;
@@ -71,14 +86,14 @@ in
           description = "File containing the password for komga user";
           example = "/run/agenix/komga-creds";
         };
-        
+
         user = mkOption {
           type = types.nullOr types.str;
           default = null;
           description = "Komga username";
           example = "admin";
         };
-        
+
         uri = mkOption {
           type = types.nullOr types.str;
           default = null;
@@ -87,6 +102,28 @@ in
         };
       };
 
+      providers = {
+        mal.passwordFile = mkOption {
+          type = types.nullOr types.path;
+          default = null;
+          description = "File containing the myanimelist client id";
+          example = "/run/agenix/mal-clientid";
+        };
+
+        comicvine.passwordFile = mkOption {
+          type = types.nullOr types.path;
+          default = null;
+          description = "File containing the API key for comicvine";
+          example = "/run/agenix/comicvine-apikey";
+        };
+
+        bangumi.passwordFile = mkOption {
+          type = types.nullOr types.path;
+          default = null;
+          description = "File containing the token for bangumi";
+          example = "/run/agenix/bangumi-token";
+        };
+      };
     };
   };
 
@@ -94,6 +131,7 @@ in
     let
       inherit (lib) mkIf getExe;
       komgaEnabled = with cfg.komga; (passwordFile != null) && (user != null) && (uri != null);
+      kavitaEnabled = with cfg.kavita; (passwordFile != null) && (uri != null);
     in
 
     mkIf cfg.enable {
@@ -114,6 +152,8 @@ in
         } // lib.optionalAttrs komgaEnabled {
           KOMF_KOMGA_BASE_URI = cfg.komga.uri;
           KOMF_KOMGA_USER = cfg.komga.user;
+        } // lib.optionalAttrs kavitaEnabled {
+          KOMF_KAVITA_BASE_URI = cfg.kavita.uri;
         };
 
         description = "Komf is a free and open source comics/mangas media server";
@@ -130,7 +170,14 @@ in
           Restart = "on-failure";
           ExecStart = "${getExe cfg.package} ${applicationYml}";
 
-          LoadCredential = lib.optionalString (cfg.komga.passwordFile != null) "KOMF_KOMGA_PASSWORD:${cfg.komga.passwordFile}";
+          LoadCredential = let
+            credentialFiles = (lib.optional (cfg.komga.passwordFile != null) "KOMF_KOMGA_PASSWORD:${cfg.komga.passwordFile}")
+                              ++ (lib.optional (cfg.kavita.passwordFile != null) "KOMF_KAVITA_API_KEY:${cfg.kavita.passwordFile}")
+                              ++ (lib.optional (cfg.providers.mal.passwordFile != null) "KOMF_METADATA_PROVIDERS_MAL_CLIENT_ID:${cfg.providers.mal.passwordFile}")
+                              ++ (lib.optional (cfg.providers.comicvine.passwordFile != null) "KOMF_METADATA_PROVIDERS_COMIC_VINE_API_KEY:${cfg.providers.comicvine.passwordFile}")
+                              ++ (lib.optional (cfg.providers.bangumi.passwordFile != null) "KOMF_METADATA_PROVIDERS_BANGUMI_TOKEN:${cfg.providers.bangumi.passwordFile != null}");
+          in
+            lib.concatStringsSep " " credentialFiles;
 
           StateDirectory = mkIf (cfg.stateDir == "/var/lib/komf") "komf";
 
