@@ -180,13 +180,7 @@ in
         wants = [ "network-online.target" ];
         after = [ "network-online.target" ];
 
-        serviceConfig = {
-          User = cfg.user;
-          Group = cfg.group;
-
-          Type = "simple";
-          Restart = "on-failure";
-          ExecStart = lib.optionalString (cfg.komga.passwordFile != null) ''
+        script = lib.optionalString (cfg.komga.passwordFile != null) ''
               export KOMF_KOMGA_PASSWORD=$(cat $CREDENTIALS_DIRECTORY/komf-komga-creds);
             ''
             + lib.optionalString (cfg.kavita.passwordFile != null) ''
@@ -204,6 +198,13 @@ in
             + ''
               ${getExe cfg.package} ${applicationYml}
             '';
+
+        serviceConfig = {
+          User = cfg.user;
+          Group = cfg.group;
+
+          Type = "simple";
+          Restart = "on-failure";
 
           LoadCredential = let
             credentialFiles = (lib.optional (cfg.komga.passwordFile != null) "komf-komga-creds:${cfg.komga.passwordFile}")
