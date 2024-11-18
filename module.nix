@@ -10,7 +10,7 @@ let
   inherit (lib) mkOption mkEnableOption mkPackageOption;
   inherit (lib.types) port str bool;
   defaultConfigs = {
-    database.file = "${cfg.stateDir}/database.yml";
+    database.file = "${cfg.stateDir}/database.sqlite";
   };
   applicationFormat = pkgs.formats.yaml { };
   applicationYml = applicationFormat.generate "application.yml" (defaultConfigs // cfg.settings);
