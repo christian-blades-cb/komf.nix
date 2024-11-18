@@ -156,8 +156,37 @@ in
           KOMF_KAVITA_BASE_URI = cfg.kavita.uri;
         };
 
-        preStart =
-            lib.optionalString (cfg.komga.passwordFile != null) ''
+        # preStart =
+        #     lib.optionalString (cfg.komga.passwordFile != null) ''
+        #       export KOMF_KOMGA_PASSWORD=$(cat $CREDENTIALS_DIRECTORY/komf-komga-creds);
+        #     ''
+        #     + lib.optionalString (cfg.kavita.passwordFile != null) ''
+        #       export KOMF_KAVITA_API_KEY=$(cat $CREDENTIALS_DIRECTORY/komf-kavita-creds);
+        #     ''
+        #     + lib.optionalString (cfg.providers.mal.passwordFile != null) ''
+        #       export KOMF_METADATA_PROVIDERS_MAL_CLIENT_ID=$(cat $CREDENTIALS_DIRECTORY/komf-mal-creds);
+        #     ''
+        #     + lib.optionalString (cfg.providers.comicvine.passwordFile != null) ''
+        #       export KOMF_METADATA_PROVIDERS_COMIC_VINE_API_KEY=$(cat $CREDENTIALS_DIRECTORY/komf-comicvine-creds);
+        #     ''
+        #     + lib.optionalString (cfg.providers.bangumi.passwordFile != null) ''
+        #       export KOMF_METADATA_PROVIDERS_BANGUMI_TOKEN=$(cat $CREDENTIALS_DIRECTORY/komf-bangumi-creds);
+        #     ''
+        #   ;
+
+        description = "Komf is a free and open source comics/mangas media server";
+
+        wantedBy = [ "multi-user.target" ];
+        wants = [ "network-online.target" ];
+        after = [ "network-online.target" ];
+
+        serviceConfig = {
+          User = cfg.user;
+          Group = cfg.group;
+
+          Type = "simple";
+          Restart = "on-failure";
+          ExecStart = lib.optionalString (cfg.komga.passwordFile != null) ''
               export KOMF_KOMGA_PASSWORD=$(cat $CREDENTIALS_DIRECTORY/komf-komga-creds);
             ''
             + lib.optionalString (cfg.kavita.passwordFile != null) ''
@@ -172,21 +201,9 @@ in
             + lib.optionalString (cfg.providers.bangumi.passwordFile != null) ''
               export KOMF_METADATA_PROVIDERS_BANGUMI_TOKEN=$(cat $CREDENTIALS_DIRECTORY/komf-bangumi-creds);
             ''
-          ;
-
-        description = "Komf is a free and open source comics/mangas media server";
-
-        wantedBy = [ "multi-user.target" ];
-        wants = [ "network-online.target" ];
-        after = [ "network-online.target" ];
-
-        serviceConfig = {
-          User = cfg.user;
-          Group = cfg.group;
-
-          Type = "simple";
-          Restart = "on-failure";
-          ExecStart = "${getExe cfg.package} ${applicationYml}";
+            + ''
+              ${getExe cfg.package} ${applicationYml}
+            '';
 
           LoadCredential = let
             credentialFiles = (lib.optional (cfg.komga.passwordFile != null) "komf-komga-creds:${cfg.komga.passwordFile}")
